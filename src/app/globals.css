@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #bf1e2e;
+  --orange: #ad4420;
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #b5b5b5;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+
+  --font-playfair: var(--font-playfair);
+  --font-inter: var(--font-inter);
+  --font-anton: var(--font-anton);
+  --font-manrope: var(--font-manrope);
+  --font-greatvibes: var(--font-greatvibes);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+.btn-primary {
+  @apply bg-[var(--color-primary)] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#a81927] transition-all;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
