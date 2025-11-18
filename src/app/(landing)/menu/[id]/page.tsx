@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import MenuDetailSection from "@/components/landing/menu/MenuDetailSection";
 import OtherMenuSection from "@/components/landing/sections/OtherMenuSection";
 import PageHeader from "@/components/landing/layout/PageHeader";

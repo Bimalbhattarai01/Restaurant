@@ -1,4 +1,7 @@
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import Menu from "@/components/landing/menu/Menu";
 import { connectDB } from "@/lib/db";
 import ContactSection from "@/components/landing/sections/ContactSection";
