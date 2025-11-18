@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -13,6 +16,15 @@ export default function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const heading = useMemo(
+    () => ({
+      title: "Welcome back",
+      subtitle: "Sign in to continue",
+    }),
+    []
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,42 +56,77 @@ export default function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps)
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Admin Login</h1>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white rounded-2xl shadow-lg p-8 w-full space-y-6 border border-gray-100"
+    >
+      <div className="flex items-center justify-between text-sm text-gray-600">
+        <Link href="/" className="inline-flex items-center gap-2 font-semibold hover:text-[#BF1E2E]">
+          <ArrowLeft size={16} />
+          Back to home
+        </Link>
+      </div>
+
+      <h1 className="text-center text-2xl font-semibold text-gray-900">Login</h1>
+
+ 
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-semibold mb-2">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg p-3 focus:border-[#BF1E2E]"
-            placeholder="admin@example.com"
-            required
-          />
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-gray-700">Email</label>
+          <div className="flex items-center gap-3 border border-gray-300 rounded-xl px-4 py-3 focus-within:border-[#BF1E2E]">
+            <Mail size={18} className="text-gray-400" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full outline-none text-gray-700 placeholder:text-gray-400"
+              placeholder="example@email.com"
+              required
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-2">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg p-3 focus:border-[#BF1E2E]"
-            placeholder="••••••••"
-            required
-          />
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-gray-700">Password</label>
+          <div className="flex items-center gap-3 border border-gray-300 rounded-xl px-4 py-3 focus-within:border-[#BF1E2E]">
+            <Lock size={18} className="text-gray-400" />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full outline-none text-gray-700 placeholder:text-gray-400"
+              placeholder="••••••••"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="text-xs font-semibold text-gray-500 hover:text-[#BF1E2E] inline-flex items-center gap-1"
+            >
+              {showPassword ? (
+                <>
+                  <EyeOff size={16} /> Hide
+                </>
+              ) : (
+                <>
+                  <Eye size={16} /> Show
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 w-full bg-[#BF1E2E] text-white font-semibold py-3 rounded-lg hover:bg-[#A81826] disabled:opacity-60"
+        className="w-full bg-[#BF1E2E] text-white font-semibold py-3 rounded-xl hover:bg-[#A81826] disabled:opacity-60 inline-flex items-center justify-center gap-2"
       >
-        {loading ? "Signing in..." : "Sign In"}
+        {loading ? "Signing in..." : "Sign in"}
       </button>
+
+
     </form>
   );
 }

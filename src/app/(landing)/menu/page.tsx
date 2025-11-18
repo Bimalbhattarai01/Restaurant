@@ -1,8 +1,10 @@
 
-import Menu from "@/components/landing/Menu";
+import Menu from "@/components/landing/menu/Menu";
 import { connectDB } from "@/lib/db";
+import ContactSection from "@/components/landing/sections/ContactSection";
 import { Menu as MenuModel } from "@/models/Menu";
 import Image from "next/image";
+import PageHeader from "@/components/landing/layout/PageHeader";
 import { Types } from "mongoose";
 
 type MenuCategory = "Brunch" | "Dinner";
@@ -49,37 +51,11 @@ export default async function MenuPage() {
 
   return (
     <div className="bg-[#F6FAFD] min-h-screen">
-      {/* ===== HERO ===== */}
-      <section className="relative bg-[#BF1E2E] text-white text-center pb-24 pt-32">
-        <div className="absolute top-0 left-0 w-full overflow-hidden leading-none">
-          <svg
-            className="relative block w-full h-[110px]"
-            viewBox="0 0 1440 320"
-            preserveAspectRatio="none"
-          >
-            <path
-              fill="#F6FAFD"
-              fillOpacity="1"
-              d="M0,224 C480,96 960,96 1440,224 L1440,0 L0,0 Z"
-            ></path>
-          </svg>
-        </div>
+        <PageHeader title="Menu" height="py-56" />
 
-        <h1 className="text-[46px] font-bold font-serif relative z-10">
-          Quality & Tradition{" "}
-          <span className="block font-greatvibes text-[50px] mt-2">Menu</span>
-        </h1>
+        
 
-        <div className="absolute -bottom-[40px] left-1/2 transform -translate-x-1/2">
-          <Image
-            src="/decor-leaf.png"
-            alt="Leaf Decoration"
-            width={120}
-            height={120}
-            className="opacity-70 rotate-12"
-          />
-        </div>
-      </section>
+    
 
       <section className="max-w-6xl mx-auto px-6 py-24 space-y-24">
         <Menu title="Brunch" imageSrc="/Brunch.svg" items={brunchItems} />
@@ -90,6 +66,7 @@ export default async function MenuPage() {
           reverse
         />
       </section>
+      <ContactSection/>
     </div>
   );
 }

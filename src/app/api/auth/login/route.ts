@@ -1,11 +1,30 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
+import { connectDB } from "@/lib/db";
+import { AdminUser } from "@/models/AdminUser";
 import { ADMIN_SESSION_COOKIE, ADMIN_SESSION_TOKEN, verifyAdminCredentials } from "@/lib/auth";
+
+function hashPassword(password: string, salt: string) {
+  return crypto.pbkdf2Sync(password, salt, 10_000, 64, "sha512").toString("hex");
+}
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    if (!verifyAdminCredentials(email, password)) {
+    const isEnvAdmin = verifyAdminCredentials(email, password);
+    let isRegisteredAdmin = false;
+
+    if (!isEnvAdmin) {
+      await connectDB();
+      const existing = await AdminUser.findOne({ email });
+      if (existing) {
+        const computedHash = hashPassword(password, existing.passwordSalt);
+        isRegisteredAdmin = computedHash === existing.passwordHash;
+      }
+    }
+
+    if (!isEnvAdmin && !isRegisteredAdmin) {
       return NextResponse.json({ success: false, message: "Invalid credentials" }, { status: 401 });
     }
 

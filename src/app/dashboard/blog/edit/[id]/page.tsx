@@ -1,7 +1,7 @@
-import SearchBar from "@/components/dashboard/SearchBar";
-import AdminCard from "@/components/dashboard/AdminCard";
-import StatCard from "@/components/dashboard/StatCard";
-import BlogFormScreen from "@/components/dashboard/BlogFormScreen";
+import SearchBar from "@/components/dashboard/layout/SearchBar";
+import AdminCard from "@/components/dashboard/cards/AdminCard";
+import StatCard from "@/components/dashboard/cards/StatCard";
+import BlogForm from "@/components/dashboard/forms/BlogForm";
 import { FileText } from "lucide-react";
 import Link from "next/link";
 
@@ -50,7 +50,7 @@ export default async function EditBlogPage({ params }: { params: Promise<{ id: s
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
         <div className="flex flex-col gap-6">
           {blog ? (
-            <BlogFormScreen blog={blog} mode="edit" />
+            <BlogForm blog={blog} mode="edit" />
           ) : (
             <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-600">
               <p className="text-lg font-semibold text-red-500">Vlog not found.</p>

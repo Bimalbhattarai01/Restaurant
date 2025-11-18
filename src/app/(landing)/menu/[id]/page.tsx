@@ -1,6 +1,6 @@
-import MenuDetailSection from "@/components/landing/MenuDetailSection";
-import MenuHeader from "@/components/landing/MenuHeader";
-import OtherMenuSection from "@/components/landing/OtherMenuSection";
+import MenuDetailSection from "@/components/landing/menu/MenuDetailSection";
+import OtherMenuSection from "@/components/landing/sections/OtherMenuSection";
+import PageHeader from "@/components/landing/layout/PageHeader";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { Types, isValidObjectId } from "mongoose";
@@ -103,7 +103,7 @@ export default async function MenuDetailPage(props: { params: Promise<{ id: stri
 
   return (
     <div className="bg-[#F6FAFD] min-h-screen">
-      <MenuHeader />
+      {/* <MenuHeader /> */}<PageHeader title="Item" height="py-37" />
 
       <main className="max-w-6xl mx-auto px-6 py-12 space-y-16">
         <MenuDetailSection

@@ -22,6 +22,10 @@ const MenuSchema = new Schema(
       type: String,
       default: "",
     },
+    imagePublicId: {
+      type: String,
+      default: "",
+    },
     images: {
       type: [String],
       default: [],
@@ -31,6 +35,10 @@ const MenuSchema = new Schema(
         },
         message: "You can upload up to 4 images per menu item.",
       },
+    },
+    imagePublicIds: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true }

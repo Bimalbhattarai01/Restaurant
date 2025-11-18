@@ -1,9 +1,10 @@
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/models/Blog";
-import BlogCard from "@/components/landing/BlogCard";
+import BlogCard from "@/components/landing/blog/BlogCard";
 import Image from "next/image";
+import PageHeader from "@/components/landing/layout/PageHeader";
 
-export const revalidate = 0; // always fetch fresh data
+export const revalidate = 0; 
 
 export default async function BlogPage() {
   await connectDB();
@@ -21,12 +22,7 @@ export default async function BlogPage() {
 
   return (
     <div className="bg-[#F6FAFD] min-h-screen">
-      <header className="relative bg-[#BF1E2E] text-white text-center py-43 overflow-hidden">
-        <h1 className="text-4xl font-bold">Blog</h1>
-        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
-      
-        </div>
-      </header>
+      <PageHeader title="Blog" />
 
       <main className="max-w-6xl mx-auto px-6 py-16 space-y-20">
         {normalizedBlogs.length > 0 ? (

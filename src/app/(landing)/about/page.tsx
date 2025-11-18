@@ -1,9 +1,9 @@
 import Image from "next/image";
 import React from "react";
 import { team } from "../../../../lib/data";
-import AboutSection from "@/components/about/AboutSection";
-import HeroSection from "@/components/about/HeroSection";
-import ContactSection from "@/components/about/ContactSection";
+import AboutSection from "@/components/landing/about/AboutSection";
+import HeroSection from "@/components/landing/about/HeroSection";
+import ContactSection from "@/components/landing/about/ContactSection";
 
 export default function AboutPage() {
   return (
@@ -15,11 +15,9 @@ export default function AboutPage() {
 
       
 
-      {/* Fado Music Section */}
       <section className="bg-gray-100 py-20">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 items-center gap-30 px-2">
         
-        {/* Left Text Section */}
         <div>
           <h3 className="text-[#A12900] text-3xl font-playfair font-medium mb-2">
             The Taste of Portugal
@@ -36,7 +34,6 @@ export default function AboutPage() {
           </p>
         </div>
 
-        {/* Right Image Section */}
         <div className="flex justify-center relative">
           <Image
             src="/images/soup.png"
@@ -45,7 +42,6 @@ export default function AboutPage() {
             height={600}
             className="rounded-2xl shadow-md object-cover"
           />
-          {/* Optional floating leaf image */}
           <Image
             src="/images/leaf.png"
             alt="Leaf Decoration"
@@ -58,14 +54,12 @@ export default function AboutPage() {
       </div>
     </section>
 
-    {/* Content Section */}
          <div>
-      {/* First Section */}
       <ContactSection
         title="Live Entertainment with"
         semi_title="Fado Music"
         subtitle="1. Live Entertainment"
-        imageSrc="/images/Content.png" // Ensure the image is in the public folder or use a URL
+        imageSrc="/images/Content.png"
         imageAlt="Fado Music Performance"
         content="Fado (Portuguese pronunciation: [ˈfaðu]; 'destiny, fate') is a music genre
           which can be traced to the 1820s in Lisbon, Portugal, but probably has much earlier
@@ -87,7 +81,6 @@ export default function AboutPage() {
    
     </div>
 
-      {/* Team Section */}
      
       <section className="bg-gray-100 text-center py-16 sm:py-20">
       <h2 className="text-2xl sm:text-3xl md:text-4xl text-orange-700 font-playfair font-semibold mb-8">

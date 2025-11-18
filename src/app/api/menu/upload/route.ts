@@ -1,11 +1,10 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
+import { uploadImageBufferToCloudinary } from "@/lib/cloudinary";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
@@ -45,19 +44,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: `You can upload up to ${MAX_IMAGES} images.` }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     const imagePaths: string[] = [];
-    for (const [index, file] of uploadedFiles.entries()) {
+    const imagePublicIds: string[] = [];
+    for (const file of uploadedFiles) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const uniqueName = `${Date.now()}-${index}-${file.name}`;
-      const filePath = path.join(uploadDir, uniqueName);
-      fs.writeFileSync(filePath, buffer);
-      imagePaths.push(`/uploads/${uniqueName}`);
+      const uploadResult = await uploadImageBufferToCloudinary(buffer, "menu-items");
+      imagePaths.push(uploadResult.url);
+      imagePublicIds.push(uploadResult.publicId);
     }
 
     await connectDB();
@@ -68,6 +62,8 @@ export async function POST(req: Request) {
       category,
       image: imagePaths[0] || "",
       images: imagePaths,
+      imagePublicId: imagePublicIds[0] || "",
+      imagePublicIds,
     });
 
     return NextResponse.json({ success: true, data: menu }, { status: 201 });
