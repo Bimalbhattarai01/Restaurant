@@ -6,7 +6,7 @@ import ActionButton from "@/components/dashboard/actions/ActionButton";
 import ConfirmDialog from "@/components/dashboard/feedback/ConfirmDialog";
 import CustomToast from "@/components/dashboard/feedback/CustomToast";
 import toast from "react-hot-toast";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface MenuItem {
@@ -29,7 +29,8 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter(); // 👈 Initialize router
 
-  const imageSrc = item.image || item.images?.[0] || "/placeholder.jpg";
+  const rawImageSrc = useMemo(() => item.image || item.images?.[0] || "/placeholder.jpg", [item.image, item.images]);
+  const imageSrc = rawImageSrc.startsWith("blob:") ? "/placeholder.jpg" : rawImageSrc;
   const isRemoteImage = imageSrc.startsWith("http://") || imageSrc.startsWith("https://");
 
   const handleDeleteConfirmed = async () => {
@@ -95,6 +96,10 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
             height={60}
             className="object-cover w-full h-full"
             unoptimized={isRemoteImage}
+            onError={(event) => {
+              const target = event.currentTarget as HTMLImageElement;
+              target.src = "/placeholder.jpg";
+            }}
           />
         </div>
 
@@ -107,7 +112,6 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
         <p>{item.category}</p>
 
         <div className="flex gap-2">
-          {/* 🟢 EDIT BUTTON — Navigate to Edit Page */}
           <ActionButton
             icon={Pencil}
             label="Edit"
@@ -116,7 +120,6 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
             onClick={() => router.push(editPath)}
           />
 
-          {/* 🔴 DELETE BUTTON */}
           <ActionButton icon={Trash2} label="Delete" color="red" onClick={() => setShowConfirm(true)} />
         </div>
       </div>

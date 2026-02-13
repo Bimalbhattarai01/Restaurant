@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Image as ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import CustomToast from "@/components/dashboard/feedback/CustomToast";
@@ -26,7 +26,17 @@ export default function EditMenuForm({ menu, onSuccess }: EditMenuFormProps) {
     description: menu.description,
   });
   const [image, setImage] = useState<File | null>(null);
+  const [currentImage, setCurrentImage] = useState<string>(menu.image || menu.images?.[0] || "");
   const [preview, setPreview] = useState<string>(menu.image || menu.images?.[0] || "");
+  const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,18 +49,12 @@ export default function EditMenuForm({ menu, onSuccess }: EditMenuFormProps) {
       payload.append("price", formData.price);
       payload.append("category", formData.category);
       payload.append("description", formData.description);
+      payload.append("existingImage", currentImage);
       if (image) payload.append("image", image);
 
       const res = await fetch(`/api/menu/${menu._id}`, {
         method: "PUT",
-        body: JSON.stringify({
-          name: formData.name,
-          price: parseFloat(formData.price),
-          category: formData.category,
-          description: formData.description,
-          image: preview, // send current image path if not changed
-        }),
-        headers: { "Content-Type": "application/json" },
+        body: payload,
       });
 
       const data = await res.json();
@@ -66,6 +70,10 @@ export default function EditMenuForm({ menu, onSuccess }: EditMenuFormProps) {
             type="success"
           />
         ));
+        const nextImage = data.data?.image || currentImage;
+        setCurrentImage(nextImage);
+        setPreview(nextImage);
+        setImage(null);
 
         onSuccess?.(); // trigger refresh or close modal
       } else {
@@ -154,8 +162,13 @@ export default function EditMenuForm({ menu, onSuccess }: EditMenuFormProps) {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      if (objectUrlRef.current) {
+                        URL.revokeObjectURL(objectUrlRef.current);
+                      }
+                      const objectUrl = URL.createObjectURL(file);
+                      objectUrlRef.current = objectUrl;
                       setImage(file);
-                      setPreview(URL.createObjectURL(file));
+                      setPreview(objectUrl);
                     }
                   }}
                 />
