@@ -119,8 +119,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     blog.image = imagePath;
     blog.imagePublicId = nextPublicId;
     await blog.save();
-    revalidateTag("blogs");
-    revalidateTag(`blog:${id}`);
+    revalidateTag("blogs", "max");
+    revalidateTag(`blog:${id}`, "max");
     revalidatePath("/blog");
 
     if (previousLocalImageToDelete && previousLocalImageToDelete !== imagePath) {
@@ -158,8 +158,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
       removeImage(deleted.image);
     }
 
-    revalidateTag("blogs");
-    revalidateTag(`blog:${id}`);
+    revalidateTag("blogs", "max");
+    revalidateTag(`blog:${id}`, "max");
     revalidatePath("/blog");
 
     return NextResponse.json({ success: true, message: "Blog deleted successfully" }, { status: 200 });

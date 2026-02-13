@@ -36,8 +36,9 @@ export async function POST(req: Request) {
 
     if (!isEnvAdmin) {
       await connectDB();
-      const existing = await AdminUser.findOne({ email }).select("passwordSalt passwordHash").lean();
-      if (existing) {
+      const existingDoc = await AdminUser.findOne({ email }).select("passwordSalt passwordHash").lean().exec();
+      const existing = Array.isArray(existingDoc) ? existingDoc[0] : existingDoc;
+      if (existing?.passwordSalt && existing?.passwordHash) {
         const computedHash = await hashPassword(password, existing.passwordSalt);
         isRegisteredAdmin = computedHash === existing.passwordHash;
       }

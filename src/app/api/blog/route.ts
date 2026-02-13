@@ -76,8 +76,8 @@ export async function POST(req: Request) {
       imagePublicId,
     });
 
-    revalidateTag("blogs");
-    revalidateTag(`blog:${blog._id.toString()}`);
+    revalidateTag("blogs", "max");
+    revalidateTag(`blog:${blog._id.toString()}`, "max");
     revalidatePath("/blog");
 
     return NextResponse.json({ success: true, data: blog }, { status: 201 });

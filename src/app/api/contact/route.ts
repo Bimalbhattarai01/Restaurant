@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       reservationTime,
       message,
     });
-    revalidateTag("contacts");
+    revalidateTag("contacts", "max");
 
     return NextResponse.json({ success: true, data: contact }, { status: 201 });
   } catch (error) {
@@ -101,7 +101,7 @@ export async function PATCH(req: Request) {
 
     await Contact.updateMany({ _id: { $in: ids } }, { $set: { isRead: true } });
     const unreadCount = await Contact.countDocuments({ isRead: false });
-    revalidateTag("contacts");
+    revalidateTag("contacts", "max");
 
     return NextResponse.json({ success: true, summary: { unreadCount } });
   } catch (error) {

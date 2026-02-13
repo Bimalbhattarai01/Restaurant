@@ -53,8 +53,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ success: false, message: "Menu not found" }, { status: 404 });
     }
 
-    revalidateTag("menus");
-    revalidateTag(`menu:${id}`);
+    revalidateTag("menus", "max");
+    revalidateTag(`menu:${id}`, "max");
     revalidatePath("/menu");
     revalidatePath(`/menu/${id}`);
 
@@ -97,8 +97,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
     }
 
     await menu.deleteOne();
-    revalidateTag("menus");
-    revalidateTag(`menu:${id}`);
+    revalidateTag("menus", "max");
+    revalidateTag(`menu:${id}`, "max");
     revalidatePath("/menu");
     revalidatePath(`/menu/${id}`);
 

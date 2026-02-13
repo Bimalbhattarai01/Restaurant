@@ -69,8 +69,8 @@ export async function POST(req: Request) {
       imagePublicIds,
     });
 
-    revalidateTag("menus");
-    revalidateTag(`menu:${menu._id.toString()}`);
+    revalidateTag("menus", "max");
+    revalidateTag(`menu:${menu._id.toString()}`, "max");
     revalidatePath("/menu");
     revalidatePath(`/menu/${menu._id.toString()}`);
 

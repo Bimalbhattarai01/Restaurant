@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       image,
     });
 
-    revalidateTag("menus");
+    revalidateTag("menus", "max");
     revalidatePath("/menu");
 
     return NextResponse.json({ success: true, data: menu }, { status: 201 });
