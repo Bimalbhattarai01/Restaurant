@@ -1,11 +1,11 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/models/Blog";
 import BlogCard from "@/components/landing/blog/BlogCard";
 import Image from "next/image";
 import PageHeader from "@/components/landing/layout/PageHeader";
+
+export const revalidate = 0; 
+export const dynamic = "force-dynamic";
 
 export default async function BlogPage() {
   await connectDB();

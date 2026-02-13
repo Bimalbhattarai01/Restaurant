@@ -37,9 +37,13 @@ export default function Sidebar() {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
     } finally {
-      router.replace("/auth");
+      window.location.href = "/auth";
       setLoggingOut(false);
     }
   };

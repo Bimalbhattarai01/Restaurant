@@ -3,27 +3,24 @@ import EditMenuForm from "@/components/dashboard/forms/EditMenuForm";
 import AdminCard from "@/components/dashboard/cards/AdminCard";
 import StatCard from "@/components/dashboard/cards/StatCard";
 import { FileText } from "lucide-react";
+import { getMenuById, getMenuCount } from "@/lib/dashboard-data";
 
-async function getMenu(id?: string) {
-  if (!id || id === "undefined") return null;
-
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/menu/${id}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to fetch menu: ${res.status}`);
-    const data = await res.json();
-    return data.data;
-  } catch (error) {
-    console.error("Fetch Error:", error);
-    return null;
-  }
-}
+type MenuFormData = {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  image?: string;
+  images?: string[];
+};
 
 export default async function EditMenuPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   console.log("🆔 EditMenuPage ID:", id);
 
-  const menu = await getMenu(id);
+  const [menu, menuCount] = await Promise.all([getMenuById(id), getMenuCount()]);
+  const menuData = menu as MenuFormData | null;
   
 
   return (
@@ -34,8 +31,8 @@ export default async function EditMenuPage({ params }: { params: Promise<{ id: s
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
         <div className="flex flex-col gap-6">
-          {menu ? (
-            <EditMenuForm menu={menu} />
+          {menuData ? (
+            <EditMenuForm menu={menuData} />
           ) : (
             <div className="text-center text-red-600 mt-10">
               <p className="font-semibold text-lg">Menu not found or failed to load.</p>
@@ -46,7 +43,7 @@ export default async function EditMenuPage({ params }: { params: Promise<{ id: s
 
         <div className="flex flex-col gap-4">
           <AdminCard name="Admin" message="Have a great day ahead.." height="h-[180px]" />
-          <StatCard icon={<FileText />} value={30} label="Items in Menu" />
+          <StatCard icon={<FileText />} value={menuCount} label="Items in Menu" />
         </div>
       </div>
     </div>

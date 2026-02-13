@@ -31,7 +31,7 @@ const ContactSection: React.FC<ContactSectionProps> = ({
         <div className="flex-1 mr-8 h-full w-full">
           <Image
             src={imageSrc} // Dynamic image source
-            alt={imageAlt ?? title} // Ensure alt is always a string for Next/Image
+            alt={imageAlt ?? ""} // Dynamic image alt text
             width={1200}
             height={1200}
             className="rounded-lg h-full "

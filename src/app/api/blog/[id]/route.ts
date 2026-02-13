@@ -4,6 +4,7 @@ import { Blog } from "@/models/Blog";
 import fs from "fs";
 import path from "path";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
+import { deleteCloudinaryAsset, uploadImageBufferToCloudinary } from "@/lib/cloudinary";
 
 const uploadDir = path.join(process.cwd(), "public/uploads");
 
@@ -30,6 +31,10 @@ function removeImage(imagePath?: string | null) {
   if (fs.existsSync(absolute)) {
     fs.unlinkSync(absolute);
   }
+}
+
+function isLocalUploadPath(imagePath?: string | null) {
+  return Boolean(imagePath && imagePath.startsWith("/uploads/"));
 }
 
 async function parsePayload(req: Request) {
@@ -79,7 +84,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
 
-  if (!isAdminAuthenticated()) {
+  if (!(await isAdminAuthenticated())) {
     return adminUnauthorizedResponse();
   }
 
@@ -98,26 +103,45 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     let imagePath = blog.image;
-    let previousImageToDelete: string | null = null;
+    let nextPublicId = blog.imagePublicId || "";
+    let previousLocalImageToDelete: string | null = null;
+    let previousCloudinaryPublicIdToDelete: string | null = null;
 
     if (payload.imageFile) {
-      const saved = await saveImageFile(payload.imageFile);
-      if (saved) {
-        previousImageToDelete = blog.image;
-        imagePath = saved;
+      const buffer = Buffer.from(await payload.imageFile.arrayBuffer());
+      const uploaded = await uploadImageBufferToCloudinary(buffer, "blog-covers");
+      imagePath = uploaded.url;
+      nextPublicId = uploaded.publicId;
+
+      if (blog.imagePublicId) {
+        previousCloudinaryPublicIdToDelete = blog.imagePublicId;
+      } else if (isLocalUploadPath(blog.image)) {
+        previousLocalImageToDelete = blog.image;
       }
     } else if (payload.existingImage) {
+      if (payload.existingImage !== blog.image) {
+        if (blog.imagePublicId) {
+          previousCloudinaryPublicIdToDelete = blog.imagePublicId;
+        } else if (isLocalUploadPath(blog.image)) {
+          previousLocalImageToDelete = blog.image;
+        }
+      }
       imagePath = payload.existingImage;
+      nextPublicId = "";
     }
 
     blog.subHeading = payload.subHeading;
     blog.heading = payload.heading;
     blog.description = payload.description;
     blog.image = imagePath;
+    blog.imagePublicId = nextPublicId;
     await blog.save();
 
-    if (previousImageToDelete && previousImageToDelete !== imagePath) {
-      removeImage(previousImageToDelete);
+    if (previousLocalImageToDelete && previousLocalImageToDelete !== imagePath) {
+      removeImage(previousLocalImageToDelete);
+    }
+    if (previousCloudinaryPublicIdToDelete && previousCloudinaryPublicIdToDelete !== nextPublicId) {
+      await deleteCloudinaryAsset(previousCloudinaryPublicIdToDelete);
     }
 
     return NextResponse.json({ success: true, data: blog }, { status: 200 });
@@ -130,7 +154,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
 
-  if (!isAdminAuthenticated()) {
+  if (!(await isAdminAuthenticated())) {
     return adminUnauthorizedResponse();
   }
 
@@ -142,7 +166,11 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
       return NextResponse.json({ success: false, message: "Blog not found" }, { status: 404 });
     }
 
-    removeImage(deleted.image);
+    if (deleted.imagePublicId) {
+      await deleteCloudinaryAsset(deleted.imagePublicId);
+    } else {
+      removeImage(deleted.image);
+    }
 
     return NextResponse.json({ success: true, message: "Blog deleted successfully" }, { status: 200 });
   } catch (error) {

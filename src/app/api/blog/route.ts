@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/models/Blog";
-import fs from "fs";
-import path from "path";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
+import { uploadImageBufferToCloudinary } from "@/lib/cloudinary";
 
 type ParsedPayload = {
   subHeading: string;
@@ -12,26 +11,6 @@ type ParsedPayload = {
   imageFile: File | null;
   existingImage: string;
 };
-
-const uploadDir = path.join(process.cwd(), "public/uploads");
-
-function ensureUploadDir() {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-}
-
-async function saveImageFile(file: File | null) {
-  if (!file) return null;
-  ensureUploadDir();
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const sanitized = file.name.replace(/[^a-zA-Z0-9.\-]/g, "-");
-  const fileName = `${Date.now()}-${sanitized}`;
-  const filePath = path.join(uploadDir, fileName);
-  fs.writeFileSync(filePath, buffer);
-  return `/uploads/${fileName}`;
-}
 
 async function parsePayload(req: Request): Promise<ParsedPayload> {
   const contentType = req.headers.get("content-type") || "";
@@ -62,7 +41,7 @@ function getErrorMessage(error: unknown) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticated()) {
+  if (!(await isAdminAuthenticated())) {
     return adminUnauthorizedResponse();
   }
 
@@ -73,7 +52,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "All fields are required." }, { status: 400 });
     }
 
-    const imagePath = payload.imageFile ? await saveImageFile(payload.imageFile) : payload.existingImage;
+    let imagePath = payload.existingImage;
+    let imagePublicId = "";
+
+    if (payload.imageFile) {
+      const buffer = Buffer.from(await payload.imageFile.arrayBuffer());
+      const uploaded = await uploadImageBufferToCloudinary(buffer, "blog-covers");
+      imagePath = uploaded.url;
+      imagePublicId = uploaded.publicId;
+    }
 
     if (!imagePath) {
       return NextResponse.json({ success: false, message: "Cover image is required." }, { status: 400 });
@@ -85,6 +72,7 @@ export async function POST(req: Request) {
       heading: payload.heading,
       description: payload.description,
       image: imagePath,
+      imagePublicId,
     });
 
     return NextResponse.json({ success: true, data: blog }, { status: 201 });
@@ -99,8 +87,10 @@ export async function GET(req: Request) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const parsedPage = Number.parseInt(searchParams.get("page") || "1", 10);
+    const parsedLimit = Number.parseInt(searchParams.get("limit") || "10", 10);
+    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 50) : 10;
     const search = searchParams.get("search") || "";
 
     const query = search

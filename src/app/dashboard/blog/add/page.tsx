@@ -4,19 +4,7 @@ import StatCard from "@/components/dashboard/cards/StatCard";
 import BlogForm from "@/components/dashboard/forms/BlogForm";
 import { FileText } from "lucide-react";
 import Link from "next/link";
-
-async function getBlogCount() {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/blog?limit=1`, { cache: "no-store" });
-    if (!res.ok) return 0;
-    const data = await res.json();
-    return data.pagination?.total || data.data?.length || 0;
-  } catch (error) {
-    console.error("Failed to load blog stats", error);
-    return 0;
-  }
-}
+import { getBlogCount } from "@/lib/dashboard-data";
 
 export default async function AddBlogPage() {
   const totalBlogs = await getBlogCount();

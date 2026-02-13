@@ -12,7 +12,7 @@ function getErrorMessage(error: unknown) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticated()) {
+  if (!(await isAdminAuthenticated())) {
     return adminUnauthorizedResponse();
   }
 
@@ -60,8 +60,10 @@ export async function GET(req: Request) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "5");
+    const parsedPage = Number.parseInt(searchParams.get("page") || "1", 10);
+    const parsedLimit = Number.parseInt(searchParams.get("limit") || "5", 10);
+    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 50) : 5;
     const search = searchParams.get("search") || "";
 
     const query = search ? { name: { $regex: search, $options: "i" } } : {};

@@ -1,6 +1,3 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 import MenuDetailSection from "@/components/landing/menu/MenuDetailSection";
 import OtherMenuSection from "@/components/landing/sections/OtherMenuSection";
 import PageHeader from "@/components/landing/layout/PageHeader";
@@ -8,6 +5,8 @@ import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { Types, isValidObjectId } from "mongoose";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 interface MenuRecord {
   _id: Types.ObjectId;

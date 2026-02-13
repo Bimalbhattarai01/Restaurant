@@ -6,6 +6,7 @@ type BlogDoc = HydratedDocument<{
   slug: string;
   description: string;
   image: string;
+  imagePublicId?: string;
 }>;
 
 function slugify(text: string) {
@@ -25,6 +26,7 @@ const BlogSchema = new Schema(
     slug: { type: String, required: true, unique: true, trim: true },
     description: { type: String, required: true },
     image: { type: String, required: true },
+    imagePublicId: { type: String, default: "" },
   },
   { timestamps: true }
 );

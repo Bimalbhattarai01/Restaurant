@@ -29,6 +29,9 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter(); // 👈 Initialize router
 
+  const imageSrc = item.image || item.images?.[0] || "/placeholder.jpg";
+  const isRemoteImage = imageSrc.startsWith("http://") || imageSrc.startsWith("https://");
+
   const handleDeleteConfirmed = async () => {
     setShowConfirm(false);
     const toastId = toast.loading("Deleting...");
@@ -85,11 +88,12 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
 
         <div className="w-[60px] h-[60px] overflow-hidden rounded-md shadow-sm">
           <Image
-            src={item.image || item.images?.[0] || "/placeholder.jpg"}
+            src={imageSrc}
             alt={item.name}
             width={60}
             height={60}
             className="object-cover w-full h-full"
+            unoptimized={isRemoteImage}
           />
         </div>
 

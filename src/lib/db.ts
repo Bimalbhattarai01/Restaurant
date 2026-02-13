@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error("⚠️ Please define the MONGODB_URI environment variable in .env.local");
-}
-
 type MongooseConnection = typeof mongoose;
 
 interface MongooseCache {
@@ -21,21 +15,43 @@ const globalWithMongoose = global as typeof global & { mongooseCache?: MongooseC
 const cached: MongooseCache = globalWithMongoose.mongooseCache || { conn: null, promise: null };
 
 export async function connectDB() {
-  if (cached.conn) return cached.conn;
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error("⚠️ Please define the MONGODB_URI environment variable in .env.local");
+  }
+
+  const readyState = mongoose.connection.readyState;
+  if (cached.conn && readyState === 1) return cached.conn;
+  if (cached.promise && readyState === 2) {
+    cached.conn = await cached.promise;
+    globalWithMongoose.mongooseCache = cached;
+    return cached.conn;
+  }
+  if (readyState !== 1) {
+    cached.conn = null;
+    cached.promise = null;
+  }
 
   if (!cached.promise) {
     cached.promise = mongoose
-      .connect(MONGODB_URI, {
+      .connect(mongoUri, {
         dbName: "restaurantDB",
         bufferCommands: false,
+        serverSelectionTimeoutMS: 20000,
       })
       .then((mongoose) => {
         console.log("✅ MongoDB Connected");
         return mongoose;
+      })
+      .catch((error) => {
+        cached.promise = null;
+        cached.conn = null;
+        throw error;
       });
   }
 
   cached.conn = await cached.promise;
+  await (mongoose.connection.asPromise?.() ?? Promise.resolve());
   globalWithMongoose.mongooseCache = cached;
   return cached.conn;
 }

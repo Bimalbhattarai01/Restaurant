@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
+const cloudinaryTimeoutMs = Number.parseInt(process.env.CLOUDINARY_TIMEOUT_MS || "20000", 10);
 
 if (!cloudName || !apiKey || !apiSecret) {
   console.warn("Cloudinary environment variables are not fully configured. Image uploads will fail.");
@@ -25,6 +26,7 @@ export async function uploadImageBufferToCloudinary(buffer: Buffer, folder = "me
         folder,
         format: "webp",
         resource_type: "image",
+        timeout: Number.isFinite(cloudinaryTimeoutMs) && cloudinaryTimeoutMs > 0 ? cloudinaryTimeoutMs : 20000,
         transformation: [{ quality: "auto", fetch_format: "webp" }],
       },
       (error, result) => {

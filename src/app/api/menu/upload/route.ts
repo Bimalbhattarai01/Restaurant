@@ -11,7 +11,7 @@ function getErrorMessage(error: unknown) {
 }
 
 export async function POST(req: Request) {
-  if (!isAdminAuthenticated()) {
+  if (!(await isAdminAuthenticated())) {
     return adminUnauthorizedResponse();
   }
 
@@ -44,6 +44,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: `You can upload up to ${MAX_IMAGES} images.` }, { status: 400 });
     }
 
+    await connectDB();
+
     const imagePaths: string[] = [];
     const imagePublicIds: string[] = [];
     for (const file of uploadedFiles) {
@@ -54,7 +56,6 @@ export async function POST(req: Request) {
       imagePublicIds.push(uploadResult.publicId);
     }
 
-    await connectDB();
     const menu = await Menu.create({
       name,
       description,

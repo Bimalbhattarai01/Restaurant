@@ -33,6 +33,8 @@ export default function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps)
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -45,8 +47,7 @@ export default function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps)
       }
 
       toast.success("Welcome back");
-      router.push(redirectTo || "/dashboard");
-      router.refresh();
+      window.location.href = redirectTo || "/dashboard";
     } catch (error) {
       console.error(error);
       toast.error("Something went wrong");

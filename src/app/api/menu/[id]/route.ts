@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
-import mongoose from "mongoose";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
 import { deleteCloudinaryAsset } from "@/lib/cloudinary";
 
@@ -10,7 +9,7 @@ function getErrorMessage(error: unknown) {
 }
 
 /**
- * ✅ GET MENU  (GET /api/menu/:id)
+ * GET MENU  (GET /api/menu/:id)
  */
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -25,13 +24,13 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
     return NextResponse.json({ success: true, data: menu }, { status: 200 });
   } catch (error) {
-    console.error("❌ Error fetching menu:", error);
+    console.error("Error fetching menu:", error);
     return NextResponse.json({ success: false, message: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 /**
- * ✅ UPDATE MENU  (PUT /api/menu/:id)
+ * UPDATE MENU  (PUT /api/menu/:id)
  */
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params; // unwrap params (Next.js 15+)
@@ -42,9 +41,6 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
   try {
     await connectDB();
-
-    console.log("🆔 PUT request for ID:", id);
-    console.log("📦 Connected to DB:", mongoose.connection.name);
 
     const body = await req.json();
 
@@ -59,13 +55,13 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     return NextResponse.json({ success: true, data: updated }, { status: 200 });
   } catch (error) {
-    console.error("❌ Error updating menu:", error);
+    console.error("Error updating menu:", error);
     return NextResponse.json({ success: false, message: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 /**
- * ✅ DELETE MENU  (DELETE /api/menu/:id)
+ * DELETE MENU  (DELETE /api/menu/:id)
  */
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params; // unwrap params (Next.js 15+)
@@ -76,9 +72,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
   try {
     await connectDB();
-
-    console.log("🆔 DELETE request for ID:", id);
-    console.log("📦 Connected to DB:", mongoose.connection.name);
 
     const menu = await Menu.findById(id);
     if (!menu) {
@@ -101,7 +94,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
     return NextResponse.json({ success: true, message: "Menu deleted successfully" }, { status: 200 });
   } catch (error) {
-    console.error("❌ Error deleting menu:", error);
+    console.error("Error deleting menu:", error);
     return NextResponse.json({ success: false, message: getErrorMessage(error) }, { status: 500 });
   }
 }
