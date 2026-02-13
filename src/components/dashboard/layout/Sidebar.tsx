@@ -3,7 +3,7 @@
 import { LayoutDashboard, FileText, CalendarCheck, PlusSquare, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const menuItems = [
@@ -31,7 +31,6 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -62,6 +61,7 @@ export default function Sidebar() {
               <Link
                 key={index}
                 href={item.href}
+                prefetch
                 className={`flex items-center gap-4 px-4 py-3 rounded-lg text-[16px] font-medium transition-all duration-200 ${
                   isActive
                     ? "bg-white text-[#BF1E2E] font-semibold shadow-md"

@@ -207,6 +207,7 @@ export default function BlogTable({
                     icon={Pencil}
                     label="Edit"
                     color="green"
+                    onMouseEnter={() => router.prefetch(`/dashboard/blog/edit/${blog._id}`)}
                     onClick={() => router.push(`/dashboard/blog/edit/${blog._id}`)}
                   />
                   <ActionButton icon={Trash2} label="Delete" color="red" onClick={() => setConfirmId(blog._id!)} />

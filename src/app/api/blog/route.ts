@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/models/Blog";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
@@ -75,6 +76,10 @@ export async function POST(req: Request) {
       imagePublicId,
     });
 
+    revalidateTag("blogs");
+    revalidateTag(`blog:${blog._id.toString()}`);
+    revalidatePath("/blog");
+
     return NextResponse.json({ success: true, data: blog }, { status: 201 });
   } catch (error) {
     console.error("Error creating blog:", error);
@@ -91,21 +96,29 @@ export async function GET(req: Request) {
     const parsedLimit = Number.parseInt(searchParams.get("limit") || "10", 10);
     const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
     const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 50) : 10;
-    const search = searchParams.get("search") || "";
-
-    const query = search
-      ? {
-          heading: { $regex: search, $options: "i" },
-        }
-      : {};
+    const search = (searchParams.get("search") || "").trim();
+    const hasSearch = search.length > 0;
+    const query = hasSearch ? { $text: { $search: search } } : {};
 
     const skip = (page - 1) * limit;
     const [total, blogs] = await Promise.all([
       Blog.countDocuments(query),
-      Blog.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      hasSearch
+        ? Blog.find(query, { score: { $meta: "textScore" } })
+            .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .select("_id subHeading heading slug description image imagePublicId createdAt updatedAt")
+            .lean()
+        : Blog.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .select("_id subHeading heading slug description image imagePublicId createdAt updatedAt")
+            .lean(),
     ]);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: blogs,
       pagination: {
@@ -115,6 +128,11 @@ export async function GET(req: Request) {
         limit,
       },
     });
+    response.headers.set(
+      "Cache-Control",
+      hasSearch ? "public, s-maxage=20, stale-while-revalidate=60" : "public, s-maxage=60, stale-while-revalidate=300"
+    );
+    return response;
   } catch (error) {
     console.error("Error fetching blogs:", error);
     return NextResponse.json({ success: false, message: getErrorMessage(error) }, { status: 500 });

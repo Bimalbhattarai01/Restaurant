@@ -3,13 +3,12 @@ import Menu from "@/components/landing/menu/Menu";
 import { connectDB } from "@/lib/db";
 import ContactSection from "@/components/landing/sections/ContactSection";
 import { Menu as MenuModel } from "@/models/Menu";
-import Image from "next/image";
 import PageHeader from "@/components/landing/layout/PageHeader";
 import { Types } from "mongoose";
 
 type MenuCategory = "Brunch" | "Dinner";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 interface MenuItem {
   id: string;

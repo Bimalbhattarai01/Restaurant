@@ -9,6 +9,37 @@ type SearchBarProps = {
   onChange?: (value: string) => void;
 };
 
+let cachedUnreadContacts: number | null = null;
+let cachedUnreadFetchedAt = 0;
+let unreadFetchInFlight: Promise<number> | null = null;
+
+async function fetchUnreadSummary() {
+  const now = Date.now();
+  if (cachedUnreadContacts !== null && now - cachedUnreadFetchedAt < 15_000) {
+    return cachedUnreadContacts;
+  }
+
+  if (unreadFetchInFlight) {
+    return unreadFetchInFlight;
+  }
+
+  unreadFetchInFlight = (async () => {
+    const res = await fetch("/api/contact?summary=true", { cache: "no-store" });
+    if (!res.ok) throw new Error("Failed to fetch summary");
+    const data = await res.json();
+    const unread = data.summary?.unreadCount ?? 0;
+    cachedUnreadContacts = unread;
+    cachedUnreadFetchedAt = Date.now();
+    return unread;
+  })();
+
+  try {
+    return await unreadFetchInFlight;
+  } finally {
+    unreadFetchInFlight = null;
+  }
+}
+
 export default function SearchBar({ value, placeholder = "Search...", onChange }: SearchBarProps) {
   const isControlled = useMemo(() => value !== undefined, [value]);
   const [internalValue, setInternalValue] = useState("");
@@ -30,15 +61,12 @@ export default function SearchBar({ value, placeholder = "Search...", onChange }
 
   useEffect(() => {
     let ignore = false;
-    let timer: NodeJS.Timeout;
 
     const fetchSummary = async () => {
       try {
-        const res = await fetch("/api/contact?summary=true", { cache: "no-store" });
-        if (!res.ok) throw new Error("Failed to fetch summary");
-        const data = await res.json();
+        const unread = await fetchUnreadSummary();
         if (!ignore) {
-          setUnreadContacts(data.summary?.unreadCount ?? 0);
+          setUnreadContacts(unread);
         }
       } catch (error) {
         console.error("Contact summary fetch failed:", error);
@@ -46,7 +74,7 @@ export default function SearchBar({ value, placeholder = "Search...", onChange }
     };
 
     fetchSummary();
-    timer = setInterval(fetchSummary, 60_000);
+    const timer = setInterval(fetchSummary, 60_000);
 
     return () => {
       ignore = true;
@@ -76,6 +104,8 @@ export default function SearchBar({ value, placeholder = "Search...", onChange }
       const data = await res.json();
       setNotifications(data.data ?? []);
       setUnreadContacts(data.summary?.unreadCount ?? 0);
+      cachedUnreadContacts = data.summary?.unreadCount ?? 0;
+      cachedUnreadFetchedAt = Date.now();
 
       const unreadIds: string[] = (data.data ?? []).filter((item: ContactTableItem) => !item.isRead).map((item: ContactTableItem) => item._id);
       if (unreadIds.length > 0) {
@@ -84,7 +114,12 @@ export default function SearchBar({ value, placeholder = "Search...", onChange }
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids: unreadIds }),
         });
-        setUnreadContacts((prev) => Math.max(0, prev - unreadIds.length));
+        setUnreadContacts((prev) => {
+          const next = Math.max(0, prev - unreadIds.length);
+          cachedUnreadContacts = next;
+          cachedUnreadFetchedAt = Date.now();
+          return next;
+        });
       }
     } catch (error) {
       console.error(error);

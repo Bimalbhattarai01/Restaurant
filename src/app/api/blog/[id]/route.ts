@@ -1,28 +1,11 @@
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/models/Blog";
 import fs from "fs";
 import path from "path";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
 import { deleteCloudinaryAsset, uploadImageBufferToCloudinary } from "@/lib/cloudinary";
-
-const uploadDir = path.join(process.cwd(), "public/uploads");
-
-function ensureUploadDir() {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-}
-
-async function saveImageFile(file: File | null) {
-  if (!file) return null;
-  ensureUploadDir();
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const sanitized = file.name.replace(/[^a-zA-Z0-9.\-]/g, "-");
-  const fileName = `${Date.now()}-${sanitized}`;
-  fs.writeFileSync(path.join(uploadDir, fileName), buffer);
-  return `/uploads/${fileName}`;
-}
 
 function removeImage(imagePath?: string | null) {
   if (!imagePath) return;
@@ -70,7 +53,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
   try {
     await connectDB();
-    const blog = await Blog.findById(id);
+    const blog = await Blog.findById(id).lean();
     if (!blog) {
       return NextResponse.json({ success: false, message: "Blog not found" }, { status: 404 });
     }
@@ -136,6 +119,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     blog.image = imagePath;
     blog.imagePublicId = nextPublicId;
     await blog.save();
+    revalidateTag("blogs");
+    revalidateTag(`blog:${id}`);
+    revalidatePath("/blog");
 
     if (previousLocalImageToDelete && previousLocalImageToDelete !== imagePath) {
       removeImage(previousLocalImageToDelete);
@@ -171,6 +157,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
     } else {
       removeImage(deleted.image);
     }
+
+    revalidateTag("blogs");
+    revalidateTag(`blog:${id}`);
+    revalidatePath("/blog");
 
     return NextResponse.json({ success: true, message: "Blog deleted successfully" }, { status: 200 });
   } catch (error) {

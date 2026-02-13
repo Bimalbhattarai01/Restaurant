@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { RefreshCcw, Plus } from "lucide-react";
 import MenuRow from "./MenuRow";
@@ -22,26 +22,26 @@ interface MenuTableProps {
   initialTotal?: number;
 }
 
+const LIMIT = 10;
+
 export default function MenuTable({ initialMenus = [], searchTerm = "", onCountChange, initialTotal }: MenuTableProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenus);
   const [loading, setLoading] = useState(initialMenus.length === 0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(() => {
-    if (initialTotal !== undefined) return Math.max(1, Math.ceil(initialTotal / 10));
-    return Math.max(1, Math.ceil(initialMenus.length / 10));
+    if (initialTotal !== undefined) return Math.max(1, Math.ceil(initialTotal / LIMIT));
+    return Math.max(1, Math.ceil(initialMenus.length / LIMIT));
   });
-
-  const limit = useMemo(() => 10, []);
 
   const buildEndpoint = useCallback(
     (search = "", pageParam = 1) => {
-      const params = new URLSearchParams({ limit: limit.toString(), page: pageParam.toString() });
+      const params = new URLSearchParams({ limit: LIMIT.toString(), page: pageParam.toString() });
       if (search.trim()) {
         params.set("search", search.trim());
       }
       return `/api/menu?${params.toString()}`;
     },
-    [limit]
+    []
   );
 
   const fetchMenus = useCallback(
@@ -70,8 +70,7 @@ export default function MenuTable({ initialMenus = [], searchTerm = "", onCountC
   );
 
   useEffect(() => {
-    if (searchTerm.trim() === "") return;
-    setPage(1);
+    if (searchTerm.trim() !== "") setPage(1);
   }, [searchTerm]);
 
   useEffect(() => {
@@ -86,29 +85,13 @@ export default function MenuTable({ initialMenus = [], searchTerm = "", onCountC
 
     setMenuItems(initialMenus);
     setLoading(false);
-    setTotalPages(Math.max(1, Math.ceil((initialTotal ?? initialMenus.length) / limit)));
+    setTotalPages(Math.max(1, Math.ceil((initialTotal ?? initialMenus.length) / LIMIT)));
     if (onCountChange) {
       onCountChange(initialTotal ?? initialMenus.length);
     }
 
     return () => controller.abort();
-  }, [fetchMenus, initialMenus, searchTerm, onCountChange, initialTotal, page, limit]);
-
-  useEffect(() => {
-    if (initialMenus.length) {
-      setMenuItems(initialMenus);
-      setLoading(false);
-    }
-
-    if (onCountChange) {
-      if (initialTotal !== undefined) {
-        onCountChange(initialTotal);
-      } else {
-        onCountChange(initialMenus.length);
-      }
-    }
-    setTotalPages(Math.max(1, Math.ceil((initialTotal ?? initialMenus.length) / limit)));
-  }, [initialMenus, onCountChange, initialTotal, limit]);
+  }, [fetchMenus, initialMenus, searchTerm, onCountChange, initialTotal, page]);
 
   const handleDataChange = () => {
     fetchMenus(false, undefined, searchTerm, page);
@@ -165,7 +148,7 @@ export default function MenuTable({ initialMenus = [], searchTerm = "", onCountC
           <p className="text-center text-gray-500 py-4">No menus available.</p>
         ) : (
           menuItems.map((item, index) => (
-            <MenuRow key={item._id} item={{ ...item, id: (page - 1) * limit + index + 1 }} onDelete={handleDataChange} />
+            <MenuRow key={item._id} item={{ ...item, id: (page - 1) * LIMIT + index + 1 }} onDelete={handleDataChange} />
           ))
         )}
       </div>

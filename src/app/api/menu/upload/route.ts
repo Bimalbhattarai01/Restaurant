@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
@@ -46,15 +47,16 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    const imagePaths: string[] = [];
-    const imagePublicIds: string[] = [];
-    for (const file of uploadedFiles) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const uploadResult = await uploadImageBufferToCloudinary(buffer, "menu-items");
-      imagePaths.push(uploadResult.url);
-      imagePublicIds.push(uploadResult.publicId);
-    }
+    const uploadResults = await Promise.all(
+      uploadedFiles.map(async (file) => {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        return uploadImageBufferToCloudinary(buffer, "menu-items");
+      })
+    );
+
+    const imagePaths = uploadResults.map((item) => item.url);
+    const imagePublicIds = uploadResults.map((item) => item.publicId);
 
     const menu = await Menu.create({
       name,
@@ -66,6 +68,11 @@ export async function POST(req: Request) {
       imagePublicId: imagePublicIds[0] || "",
       imagePublicIds,
     });
+
+    revalidateTag("menus");
+    revalidateTag(`menu:${menu._id.toString()}`);
+    revalidatePath("/menu");
+    revalidatePath(`/menu/${menu._id.toString()}`);
 
     return NextResponse.json({ success: true, data: menu }, { status: 201 });
   } catch (error) {

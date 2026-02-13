@@ -10,26 +10,11 @@ type AddMenuPageContentProps = {
   initialCount: number;
 };
 
-async function fetchMenuCount(): Promise<number> {
-  try {
-    const res = await fetch("/api/menu?limit=1", { cache: "no-store" });
-    const data = await res.json();
-    if (data.success) {
-      return data.pagination?.total ?? data.data?.length ?? 0;
-    }
-    return 0;
-  } catch (error) {
-    console.error("Failed to fetch menu count", error);
-    return 0;
-  }
-}
-
 export default function AddMenuPageContent({ initialCount }: AddMenuPageContentProps) {
   const [menuCount, setMenuCount] = useState(initialCount);
 
-  const handleMenuAdded = useCallback(async () => {
-    const nextCount = await fetchMenuCount();
-    setMenuCount(nextCount);
+  const handleMenuAdded = useCallback(() => {
+    setMenuCount((prev) => prev + 1);
   }, []);
 
   return (

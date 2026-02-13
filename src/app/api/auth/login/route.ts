@@ -5,7 +5,15 @@ import { AdminUser } from "@/models/AdminUser";
 import { ADMIN_SESSION_COOKIE, ADMIN_SESSION_TOKEN, verifyAdminCredentials } from "@/lib/auth";
 
 function hashPassword(password: string, salt: string) {
-  return crypto.pbkdf2Sync(password, salt, 10_000, 64, "sha512").toString("hex");
+  return new Promise<string>((resolve, reject) => {
+    crypto.pbkdf2(password, salt, 10_000, 64, "sha512", (error, derivedKey) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(derivedKey.toString("hex"));
+    });
+  });
 }
 
 function isLocalhostRequest(req: Request) {
@@ -28,9 +36,9 @@ export async function POST(req: Request) {
 
     if (!isEnvAdmin) {
       await connectDB();
-      const existing = await AdminUser.findOne({ email });
+      const existing = await AdminUser.findOne({ email }).select("passwordSalt passwordHash").lean();
       if (existing) {
-        const computedHash = hashPassword(password, existing.passwordSalt);
+        const computedHash = await hashPassword(password, existing.passwordSalt);
         isRegisteredAdmin = computedHash === existing.passwordHash;
       }
     }

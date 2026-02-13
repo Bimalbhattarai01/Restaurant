@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Contact } from "@/models/Contact";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
       reservationTime,
       message,
     });
+    revalidateTag("contacts");
 
     return NextResponse.json({ success: true, data: contact }, { status: 201 });
   } catch (error) {
@@ -40,31 +42,32 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "10", 10)));
-    const search = searchParams.get("search")?.trim();
+    const search = searchParams.get("search")?.trim() || "";
     const summaryOnly = searchParams.get("summary") === "true";
 
-    const query: Record<string, unknown> = {};
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { subject: { $regex: search, $options: "i" } },
-      ];
-    }
+    const query: Record<string, unknown> = search ? { $text: { $search: search } } : {};
 
     const totalPromise = Contact.countDocuments(query);
     const unreadCountPromise = Contact.countDocuments({ isRead: false });
 
     if (summaryOnly) {
       const [total, unreadCount] = await Promise.all([totalPromise, unreadCountPromise]);
-      return NextResponse.json({ success: true, summary: { total, unreadCount } });
+      const response = NextResponse.json({ success: true, summary: { total, unreadCount } });
+      response.headers.set("Cache-Control", "private, max-age=10, stale-while-revalidate=30");
+      return response;
     }
 
     const skip = (page - 1) * limit;
-    const contacts = await Contact.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+    const contacts = search
+      ? await Contact.find(query, { score: { $meta: "textScore" } })
+          .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean()
+      : await Contact.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
     const [total, unreadCount] = await Promise.all([totalPromise, unreadCountPromise]);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: contacts,
       pagination: {
@@ -75,6 +78,8 @@ export async function GET(req: Request) {
       },
       summary: { total, unreadCount },
     });
+    response.headers.set("Cache-Control", "private, max-age=10, stale-while-revalidate=30");
+    return response;
   } catch (error) {
     console.error("Error fetching contacts:", error);
     return NextResponse.json({ success: false, message: getErrorMessage(error) }, { status: 500 });
@@ -96,6 +101,7 @@ export async function PATCH(req: Request) {
 
     await Contact.updateMany({ _id: { $in: ids } }, { $set: { isRead: true } });
     const unreadCount = await Contact.countDocuments({ isRead: false });
+    revalidateTag("contacts");
 
     return NextResponse.json({ success: true, summary: { unreadCount } });
   } catch (error) {

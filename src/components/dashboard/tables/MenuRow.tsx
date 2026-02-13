@@ -70,6 +70,7 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
       toast.custom((t) => <CustomToast id={t.id} message="Something went wrong!" type="error" />);
     }
   };
+  const editPath = `/dashboard/menu/edit/${item._id}`;
 
   return (
     <>
@@ -111,7 +112,8 @@ export default function MenuRow({ item, onDelete }: MenuRowProps) {
             icon={Pencil}
             label="Edit"
             color="green"
-            onClick={() => router.push(`/dashboard/edit-menu/${item._id}`)}
+            onMouseEnter={() => router.prefetch(editPath)}
+            onClick={() => router.push(editPath)}
           />
 
           {/* 🔴 DELETE BUTTON */}

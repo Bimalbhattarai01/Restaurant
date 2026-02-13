@@ -52,5 +52,7 @@ MenuSchema.pre("save", function (next) {
 });
 
 MenuSchema.index({ name: 1, category: 1 }, { unique: true });
+MenuSchema.index({ createdAt: -1 });
+MenuSchema.index({ name: "text", description: "text" });
 
 export const Menu = mongoose.models.Menu || mongoose.model("Menu", MenuSchema, "menus");

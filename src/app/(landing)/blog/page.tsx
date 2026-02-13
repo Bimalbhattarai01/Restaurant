@@ -1,16 +1,28 @@
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/models/Blog";
 import BlogCard from "@/components/landing/blog/BlogCard";
-import Image from "next/image";
 import PageHeader from "@/components/landing/layout/PageHeader";
 
-export const revalidate = 0; 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
+
+type RawBlog = {
+  _id: string;
+  title?: string;
+  heading?: string;
+  name?: string;
+  subtitle?: string;
+  subHeading?: string;
+  subheading?: string;
+  description?: string;
+  content?: string;
+  image?: string;
+  thumbnail?: string;
+};
 
 export default async function BlogPage() {
   await connectDB();
-  const blogs = await Blog.find().sort({ createdAt: -1 }).lean();
-  const normalizedBlogs = blogs.map((blog: any) => ({
+  const blogs = await Blog.find().sort({ createdAt: -1 }).lean<RawBlog[]>();
+  const normalizedBlogs = blogs.map((blog) => ({
     ...blog,
     title: blog.title ?? blog.heading ?? blog.name ?? "Sung Through Fado",
     subtitle: blog.subtitle ?? blog.subHeading ?? blog.subheading ?? "The Taste of Portugal",
@@ -27,7 +39,7 @@ export default async function BlogPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-16 space-y-20">
         {normalizedBlogs.length > 0 ? (
-          normalizedBlogs.map((blog: any, index: number) => (
+          normalizedBlogs.map((blog, index) => (
             <BlogCard
               key={blog._id}
               title={blog.title}

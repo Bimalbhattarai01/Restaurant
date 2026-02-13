@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
-import { deleteCloudinaryAsset } from "@/lib/cloudinary";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
@@ -16,7 +16,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
   try {
     await connectDB();
-    const menu = await Menu.findById(id);
+    const menu = await Menu.findById(id).lean();
 
     if (!menu) {
       return NextResponse.json({ success: false, message: "Menu not found" }, { status: 404 });
@@ -53,6 +53,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ success: false, message: "Menu not found" }, { status: 404 });
     }
 
+    revalidateTag("menus");
+    revalidateTag(`menu:${id}`);
+    revalidatePath("/menu");
+    revalidatePath(`/menu/${id}`);
+
     return NextResponse.json({ success: true, data: updated }, { status: 200 });
   } catch (error) {
     console.error("Error updating menu:", error);
@@ -72,6 +77,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
   try {
     await connectDB();
+    const { deleteCloudinaryAsset } = await import("@/lib/cloudinary");
 
     const menu = await Menu.findById(id);
     if (!menu) {
@@ -91,6 +97,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
     }
 
     await menu.deleteOne();
+    revalidateTag("menus");
+    revalidateTag(`menu:${id}`);
+    revalidatePath("/menu");
+    revalidatePath(`/menu/${id}`);
 
     return NextResponse.json({ success: true, message: "Menu deleted successfully" }, { status: 200 });
   } catch (error) {

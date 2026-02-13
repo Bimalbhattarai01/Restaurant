@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -18,13 +17,9 @@ export default function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps)
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const heading = useMemo(
-    () => ({
-      title: "Welcome back",
-      subtitle: "Sign in to continue",
-    }),
-    []
-  );
+  useEffect(() => {
+    router.prefetch(redirectTo || "/dashboard");
+  }, [router, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +42,7 @@ export default function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps)
       }
 
       toast.success("Welcome back");
-      window.location.href = redirectTo || "/dashboard";
+      router.replace(redirectTo || "/dashboard");
     } catch (error) {
       console.error(error);
       toast.error("Something went wrong");

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { adminUnauthorizedResponse, isAdminAuthenticated } from "@/lib/auth";
@@ -44,6 +45,9 @@ export async function POST(req: Request) {
       image,
     });
 
+    revalidateTag("menus");
+    revalidatePath("/menu");
+
     return NextResponse.json({ success: true, data: menu }, { status: 201 });
   } catch (error) {
     if (isDuplicateKeyError(error)) {
@@ -64,16 +68,29 @@ export async function GET(req: Request) {
     const parsedLimit = Number.parseInt(searchParams.get("limit") || "5", 10);
     const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
     const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 50) : 5;
-    const search = searchParams.get("search") || "";
+    const search = (searchParams.get("search") || "").trim();
+    const hasSearch = search.length > 0;
+    const query = hasSearch ? { $text: { $search: search } } : {};
 
-    const query = search ? { name: { $regex: search, $options: "i" } } : {};
-
-    const total = await Menu.countDocuments(query);
     const skip = (page - 1) * limit;
+    const [total, menus] = await Promise.all([
+      Menu.countDocuments(query),
+      hasSearch
+        ? Menu.find(query, { score: { $meta: "textScore" } })
+            .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .select("_id name description price category image images createdAt updatedAt")
+            .lean()
+        : Menu.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .select("_id name description price category image images createdAt updatedAt")
+            .lean(),
+    ]);
 
-    const menus = await Menu.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: menus,
       pagination: {
@@ -83,6 +100,11 @@ export async function GET(req: Request) {
         limit,
       },
     });
+    response.headers.set(
+      "Cache-Control",
+      hasSearch ? "public, s-maxage=20, stale-while-revalidate=60" : "public, s-maxage=60, stale-while-revalidate=300"
+    );
+    return response;
   } catch (error) {
     console.error("Error fetching menus:", error);
     return NextResponse.json({ success: false, message: getErrorMessage(error) }, { status: 500 });

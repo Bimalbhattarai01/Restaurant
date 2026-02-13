@@ -44,4 +44,7 @@ const ContactSchema = new Schema(
   { timestamps: true }
 );
 
+ContactSchema.index({ createdAt: -1 });
+ContactSchema.index({ name: "text", email: "text", subject: "text", message: "text" });
+
 export const Contact = mongoose.models.Contact || mongoose.model("Contact", ContactSchema, "contacts");

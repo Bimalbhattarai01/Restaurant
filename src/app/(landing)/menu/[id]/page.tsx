@@ -6,7 +6,7 @@ import { Menu } from "@/models/Menu";
 import { Types, isValidObjectId } from "mongoose";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 interface MenuRecord {
   _id: Types.ObjectId;

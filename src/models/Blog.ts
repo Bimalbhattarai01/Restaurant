@@ -31,6 +31,9 @@ const BlogSchema = new Schema(
   { timestamps: true }
 );
 
+BlogSchema.index({ createdAt: -1 });
+BlogSchema.index({ heading: "text", subHeading: "text", description: "text" });
+
 BlogSchema.pre("validate", async function (next) {
   const doc = this as BlogDoc;
   if (!doc.isModified("heading")) return next();

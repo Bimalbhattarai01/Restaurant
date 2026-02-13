@@ -33,10 +33,12 @@ export async function connectDB() {
   }
 
   if (!cached.promise) {
+    const autoIndex = process.env.MONGOOSE_AUTO_INDEX !== "false";
     cached.promise = mongoose
       .connect(mongoUri, {
         dbName: "restaurantDB",
         bufferCommands: false,
+        autoIndex,
         serverSelectionTimeoutMS: 20000,
       })
       .then((mongoose) => {

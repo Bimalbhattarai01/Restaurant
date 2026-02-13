@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Types } from "mongoose";
+import { unstable_cache } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Menu } from "@/models/Menu";
 import { Blog } from "@/models/Blog";
@@ -39,116 +40,175 @@ function serializeDoc<T extends { _id: unknown } & Partial<WithTimestamps>>(doc:
 }
 
 export async function getMenuCount() {
-  await connectDB();
-  return Menu.countDocuments();
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      return Menu.countDocuments();
+    },
+    ["dashboard-menu-count"],
+    { revalidate: 30, tags: ["menus"] }
+  )();
 }
 
 export async function getBlogCount() {
-  await connectDB();
-  return Blog.countDocuments();
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      return Blog.countDocuments();
+    },
+    ["dashboard-blog-count"],
+    { revalidate: 30, tags: ["blogs"] }
+  )();
 }
 
 export async function getContactSummary() {
-  await connectDB();
-  const [total, unreadCount] = await Promise.all([
-    Contact.countDocuments(),
-    Contact.countDocuments({ isRead: false }),
-  ]);
-
-  return { total, unread: unreadCount };
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      const [total, unreadCount] = await Promise.all([Contact.countDocuments(), Contact.countDocuments({ isRead: false })]);
+      return { total, unread: unreadCount };
+    },
+    ["dashboard-contact-summary"],
+    { revalidate: 15, tags: ["contacts"] }
+  )();
 }
 
 export async function getMenuPage(page = 1, limit = 10) {
-  await connectDB();
   const safePage = Math.max(1, page);
   const safeLimit = Math.max(1, limit);
-  const skip = (safePage - 1) * safeLimit;
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      const skip = (safePage - 1) * safeLimit;
 
-  const [total, menus] = await Promise.all([
-    Menu.countDocuments(),
-    Menu.find().sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
-  ]);
+      const [total, menus] = await Promise.all([
+        Menu.countDocuments(),
+        Menu.find()
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(safeLimit)
+          .select("_id name description price category image images createdAt updatedAt")
+          .lean(),
+      ]);
 
-  const pagination: Pagination = {
-    total,
-    page: safePage,
-    pages: getPages(total, safeLimit),
-    limit: safeLimit,
-  };
+      const pagination: Pagination = {
+        total,
+        page: safePage,
+        pages: getPages(total, safeLimit),
+        limit: safeLimit,
+      };
 
-  const data = menus.map((menu) => serializeDoc(menu));
-  return { data, pagination };
+      const data = menus.map((menu) => serializeDoc(menu));
+      return { data, pagination };
+    },
+    [`dashboard-menu-page-${safePage}-${safeLimit}`],
+    { revalidate: 30, tags: ["menus"] }
+  )();
 }
 
 export async function getBlogPage(page = 1, limit = 10) {
-  await connectDB();
   const safePage = Math.max(1, page);
   const safeLimit = Math.max(1, limit);
-  const skip = (safePage - 1) * safeLimit;
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      const skip = (safePage - 1) * safeLimit;
 
-  const [total, blogs] = await Promise.all([
-    Blog.countDocuments(),
-    Blog.find().sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
-  ]);
+      const [total, blogs] = await Promise.all([
+        Blog.countDocuments(),
+        Blog.find()
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(safeLimit)
+          .select("_id subHeading heading slug description image imagePublicId createdAt updatedAt")
+          .lean(),
+      ]);
 
-  const pagination: Pagination = {
-    total,
-    page: safePage,
-    pages: getPages(total, safeLimit),
-    limit: safeLimit,
-  };
+      const pagination: Pagination = {
+        total,
+        page: safePage,
+        pages: getPages(total, safeLimit),
+        limit: safeLimit,
+      };
 
-  const data = blogs.map((blog) => serializeDoc(blog));
-  return { data, pagination };
+      const data = blogs.map((blog) => serializeDoc(blog));
+      return { data, pagination };
+    },
+    [`dashboard-blog-page-${safePage}-${safeLimit}`],
+    { revalidate: 30, tags: ["blogs"] }
+  )();
 }
 
 export async function getContactPage(page = 1, limit = 10) {
-  await connectDB();
   const safePage = Math.max(1, page);
   const safeLimit = Math.max(1, Math.min(100, limit));
-  const skip = (safePage - 1) * safeLimit;
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      const skip = (safePage - 1) * safeLimit;
 
-  const [contacts, total, unreadCount] = await Promise.all([
-    Contact.find().sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
-    Contact.countDocuments(),
-    Contact.countDocuments({ isRead: false }),
-  ]);
+      const [contacts, total, unreadCount] = await Promise.all([
+        Contact.find()
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(safeLimit)
+          .select("_id name email phone subject reservationDate reservationTime message isRead createdAt updatedAt")
+          .lean(),
+        Contact.countDocuments(),
+        Contact.countDocuments({ isRead: false }),
+      ]);
 
-  const pagination: Pagination = {
-    total,
-    page: safePage,
-    pages: getPages(total, safeLimit),
-    limit: safeLimit,
-  };
+      const pagination: Pagination = {
+        total,
+        page: safePage,
+        pages: getPages(total, safeLimit),
+        limit: safeLimit,
+      };
 
-  const data = contacts.map((contact) => ({
-    ...serializeDoc(contact),
-    reservationDate: contact.reservationDate ? contact.reservationDate.toISOString() : undefined,
-  }));
+      const data = contacts.map((contact) => ({
+        ...serializeDoc(contact),
+        reservationDate: contact.reservationDate ? contact.reservationDate.toISOString() : undefined,
+      }));
 
-  return {
-    data,
-    pagination,
-    summary: { total, unreadCount },
-  };
+      return {
+        data,
+        pagination,
+        summary: { total, unreadCount },
+      };
+    },
+    [`dashboard-contact-page-${safePage}-${safeLimit}`],
+    { revalidate: 15, tags: ["contacts"] }
+  )();
 }
 
 export async function getMenuById(id?: string) {
   if (!id || id === "undefined" || !Types.ObjectId.isValid(id)) return null;
-  await connectDB();
-  const menu = await Menu.findById(id).lean();
-  if (!menu) return null;
-  return serializeDoc(
-    menu as { _id: unknown; createdAt?: Date; updatedAt?: Date } & Record<string, unknown>
-  );
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      const menu = await Menu.findById(id)
+        .select("_id name price category description image images createdAt updatedAt")
+        .lean();
+      if (!menu) return null;
+      return serializeDoc(menu as { _id: unknown; createdAt?: Date; updatedAt?: Date } & Record<string, unknown>);
+    },
+    [`dashboard-menu-by-id-${id}`],
+    { revalidate: 60, tags: ["menus", `menu:${id}`] }
+  )();
 }
 
 export async function getBlogById(id?: string) {
   if (!id || id === "undefined" || !Types.ObjectId.isValid(id)) return null;
-  await connectDB();
-  const blog = await Blog.findById(id).lean();
-  if (!blog) return null;
-  return serializeDoc(
-    blog as { _id: unknown; createdAt?: Date; updatedAt?: Date } & Record<string, unknown>
-  );
+  return unstable_cache(
+    async () => {
+      await connectDB();
+      const blog = await Blog.findById(id)
+        .select("_id subHeading heading slug description image imagePublicId createdAt updatedAt")
+        .lean();
+      if (!blog) return null;
+      return serializeDoc(blog as { _id: unknown; createdAt?: Date; updatedAt?: Date } & Record<string, unknown>);
+    },
+    [`dashboard-blog-by-id-${id}`],
+    { revalidate: 60, tags: ["blogs", `blog:${id}`] }
+  )();
 }

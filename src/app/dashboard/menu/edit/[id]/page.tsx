@@ -17,7 +17,6 @@ type MenuFormData = {
 
 export default async function EditMenuPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  console.log("🆔 EditMenuPage ID:", id);
 
   const [menu, menuCount] = await Promise.all([getMenuById(id), getMenuCount()]);
   const menuData = menu as MenuFormData | null;
